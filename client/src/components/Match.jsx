@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import PlayerList from "./PlayerList";
 import WordForm from "./WordForm";
 import TurnPanel from "./TurnPanel";
-import GameState from "./GameState";
+import GameState from "./GameState/GameState";
 function Match(props) {
   const { socket, match } = props;
   const [game, setGame] = useState(null);
   const [ready, setReady] = useState(false);
   const [newWord, setNewWord] = useState("");
   const [isWordListEmpty, setIsWordListEmpty] = useState(true);
-
+  const [active, setActive] = useState(false);
   // ----------- Server Communication ------- //
   const sendNewMatch = () => {
     socket.emit("newMatch", { matchId: match.params.matchId, user: props.username });
@@ -39,6 +39,7 @@ function Match(props) {
     newGame.turn++;
     changeActiveWord(newGame);
     setGame(newGame);
+    setActive(!active);
     updateGame(newGame);
   };
 
@@ -76,7 +77,7 @@ function Match(props) {
       </div>
       <div>
         <h2>State</h2>
-        <GameState game={game} />
+        <GameState active={active} game={game} />
       </div>
     </div>
   ) : (
