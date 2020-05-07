@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import Counter from "./Counter";
-function GameState(props) {
+import CurrentUser from "./CurrentUser";
+function GameState({ active, game }) {
   const [time, setTime] = useState(60);
 
   useEffect(() => {
     let timeInterval,
       timeStop = 60;
-    if (props.active) {
+    if (active) {
       timeInterval = setInterval(() => {
         if (timeStop <= 1) clearInterval(timeInterval);
         console.log(timeStop);
@@ -21,11 +22,12 @@ function GameState(props) {
     }
 
     return () => clearInterval(timeInterval);
-  }, [props.active]);
+  }, [active]);
 
   return (
     <div>
       <Counter time={time} />
+      <CurrentUser game={game} />
     </div>
   );
 }

@@ -58,6 +58,7 @@ function Match(props) {
 
   useEffect(() => {
     if (ready) {
+      console.log(ready);
       socket.on("activeGame", (game) => setGame(game));
       retrieveMatch();
     }
@@ -69,7 +70,7 @@ function Match(props) {
   return game ? (
     <div style={{ display: "flex", justifyContent: "space-around" }}>
       <div>
-        <TurnPanel turn={game.turn} disabled={isWordListEmpty} nextTurn={nextTurn} />
+        <TurnPanel turn={game.turn} disabled={isWordListEmpty || active} nextTurn={nextTurn} />
         {isWordListEmpty && <p>Introduce algunas palabras para jugar.</p>}
         <p>Palabras actuales: {game.words.length}</p>
         <PlayerList userList={game.users.map((user) => user.name)} />
