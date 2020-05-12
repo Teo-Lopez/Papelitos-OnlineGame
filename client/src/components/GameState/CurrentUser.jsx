@@ -1,12 +1,9 @@
 import React from "react";
 
-function CurrentUser({ game }) {
-  console.log(game, game.turn % game.users.length);
-  const currentUser = game.users[game.turn % game.users.length];
-
+function CurrentUser({ currentPlayer }) {
   return (
     <div>
-      <p>{currentUser.name}</p>
+      <p>{currentPlayer}</p>
     </div>
   );
 }

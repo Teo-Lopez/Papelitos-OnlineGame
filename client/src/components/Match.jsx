@@ -3,14 +3,22 @@ import PlayerList from "./PlayerList";
 import WordForm from "./WordForm";
 import TurnPanel from "./TurnPanel";
 import GameState from "./GameState/GameState";
+
 function Match(props) {
+  // ------- Props ------ //
   const { socket, match } = props;
+
+  //------- State Values ------ /
   const [game, setGame] = useState(null);
   const [ready, setReady] = useState(false);
   const [newWord, setNewWord] = useState("");
   const [isWordListEmpty, setIsWordListEmpty] = useState(true);
-  const [active, setActive] = useState(false);
+  const [timeLeft, settimeLeft] = useState(60);
   // ----------- Server Communication ------- //
+  socket.on("timeLeft", (time) => {
+    settimeLeft(time);
+  });
+
   const sendNewMatch = () => {
     socket.emit("newMatch", { matchId: match.params.matchId, user: props.username });
   };
@@ -18,8 +26,9 @@ function Match(props) {
     console.log("requesting game");
     socket.emit("getActiveGame", `${match.params.matchId}`);
   };
+
   const updateGame = (game) => {
-    socket.emit("updateGame", game);
+    socket.emit("updateGame", { matchId: match.params.matchId, updatedGame: game });
   };
 
   const postWord = (newWord) => {
@@ -39,16 +48,17 @@ function Match(props) {
     newGame.turn++;
     changeActiveWord(newGame);
     setGame(newGame);
-    setActive(!active);
     updateGame(newGame);
   };
 
-  // ----------- Effects ------ //
+  // ----------------------- Effects ------------------ //
+  // --- Comienzo ---- //
   useEffect(() => {
     sendNewMatch();
     setReady(true);
   }, []);
 
+  // --- Cambios en Game --- //
   useEffect(() => {
     if (game) {
       if (game.words.length) setIsWordListEmpty(false);
@@ -56,6 +66,7 @@ function Match(props) {
     }
   }, [game]);
 
+  // --- Partida Recibida de Server --- //
   useEffect(() => {
     if (ready) {
       console.log(ready);
@@ -70,7 +81,7 @@ function Match(props) {
   return game ? (
     <div style={{ display: "flex", justifyContent: "space-around" }}>
       <div>
-        <TurnPanel turn={game.turn} disabled={isWordListEmpty || active} nextTurn={nextTurn} />
+        <TurnPanel turn={game.turn} disabled={isWordListEmpty || game.activeTurn} nextTurn={nextTurn} />
         {isWordListEmpty && <p>Introduce algunas palabras para jugar.</p>}
         <p>Palabras actuales: {game.words.length}</p>
         <PlayerList userList={game.users.map((user) => user.name)} />
@@ -78,7 +89,7 @@ function Match(props) {
       </div>
       <div>
         <h2>State</h2>
-        <GameState active={active} game={game} />
+        <GameState active={game.activeTurn} game={game} timeLeft={timeLeft} />
       </div>
     </div>
   ) : (

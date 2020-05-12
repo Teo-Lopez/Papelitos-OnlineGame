@@ -27,8 +27,56 @@ let server = http.createServer(app);
 const socketIo = require("socket.io");
 const io = socketIo(server); // < Interesting!
 const allGames = [];
+
+//Helper function to make teams from a list of players
+const makeTeams = (userList, numberOfTeams) => {
+  return userList.map((user, idx) => {
+    const team = [];
+    for (let i = 0; i < numberOfTeams; i++) {
+      if (idx % i == 0) {
+        team.push(user);
+      }
+    }
+    return team;
+  });
+};
+
+//Helper function to define current player
+const findCurrentPlayer = (lastPlayer, currentGame) => {
+  let found = false;
+  let newActivePlayer;
+
+  // Itera los equipos //
+  for (let key in currentGame) {
+    if (key.includes("team")) {
+      let playerIndex = currentGame[key].findIndex((player) => {
+        console.log(player.name, lastPlayer);
+        return player.name === lastPlayer;
+      });
+
+      //// TO-DO RETORNA UNDEFINED ///
+
+      //Si ha encontrado el antiguo player lo sustituye
+      if (found) {
+        newActivePlayer = currentGame[key][playerIndex];
+        console.log(newActivePlayer, "new activePlayer");
+        break;
+      }
+      console.log(playerIndex, "playerindex");
+      //Si encuentra al antiguo usuario lo marca para la siguiente vuelta
+      if (playerIndex != -1) {
+        found = true;
+      }
+    }
+  }
+
+  return newActivePlayer;
+};
+
 io.on("connection", (socket) => {
   console.log("New client connected");
+
+  // --------------------------- Shows List of Games ------------------//
   socket.on("getList", () => {
     console.log("sending first list");
     socket.emit(
@@ -37,13 +85,20 @@ io.on("connection", (socket) => {
     );
   });
 
+  // --------------------------- Request new Match or Joins one ------------------//
+
   socket.on("newMatch", (data) => {
+    //  User Data  //
     const name = data.matchId;
     const newUser = data.user;
+
+    // Helper Function for Checking if game exist //
     const existGame = (name) => allGames.some((game) => game.name == name);
+    // Helper function for checking if user is in the game //
     const isUserInGame = (name, newUser) => {
       const idx = allGames.findIndex((game) => game.name === name);
 
+      if (idx == -1 || !newUser) throw Error("Invalid Game Idx or User");
       return allGames[idx].users.some((user) => user.name === newUser);
     };
 
@@ -55,16 +110,31 @@ io.on("connection", (socket) => {
       words: [],
       activePlayer: "",
       rooster: [],
+      team_1: [],
+      team_2: [],
+      //team_n
+      activeTurn: false,
     };
 
-    if (!existGame(name))
-      allGames.push({ name, turn: 0, users: [{ name: newUser, id: socket.id }], activeWord: "", words: [], activePlayer: "", rooster: [] });
-    else if (!isUserInGame(name, newUser)) {
+    if (!existGame(name)) {
+      // Si no existe juego crea uno nuevo //
+      allGames.push({
+        name,
+        turn: 0,
+        users: [{ name: newUser, id: socket.id }],
+        activeWord: "",
+        words: [],
+        activePlayer: "",
+        rooster: [],
+        activeTurn: false,
+      });
+    } else if (!isUserInGame(name, newUser)) {
+      // Si el usuario es nuevo lo incluye //
       const gameIdx = allGames.findIndex((game) => game.name === name);
-      allGames[gameIdx].users.push({ name: newUser, id: socket.id });
-      allGames[gameIdx].rooster.push({ name: newUser, id: socket.id });
+      const currentGame = allGames[gameIdx];
+      currentGame.users.push({ name: newUser, id: socket.id });
+      currentGame.rooster.push({ name: newUser, id: socket.id });
     }
-    console.log("New list of matches: \b ", allGames, " \b---------------");
     socket.emit(
       "matchList",
       allGames.map((game) => game.name)
@@ -76,32 +146,59 @@ io.on("connection", (socket) => {
     socket.join(name);
   });
 
-  socket.on("updateGame", (game) => {
-    const idx = allGames.find((elm) => elm.name == game.name);
-    allGames.splice(idx, 1, game);
-    console.log(allGames, "ACTUALIZADO MADERFAKER");
+  socket.on("updateGame", ({ matchId, updatedGame }) => {
+    const idx = allGames.findIndex((elm) => elm.name == updatedGame.name);
+    const oldGame = allGames[idx];
+
+    //Si en el update cambia el turno inicia la cuenta //
+    if (oldGame.turn != updatedGame.turn) {
+      updatedGame.activeTurn = true;
+
+      oldGame.activePlayer
+        ? (updatedGame.activePlayer = findCurrentPlayer(oldGame.activePlayer.name, updatedGame))
+        : (updatedGame.activePlayer = updatedGame.users[0]);
+      console.log(updatedGame);
+      io.sockets.in(matchId).emit("activeGame", updatedGame);
+
+      let timeInterval,
+        timeStop = 60;
+
+      timeInterval = setInterval(() => {
+        //Si termina la cuenta indica fin de turno //
+        if (timeStop <= 0) {
+          clearInterval(timeInterval);
+          updatedGame.activeTurn = false;
+          io.sockets.in(matchId).emit("activeGame", updatedGame);
+        }
+        io.sockets.in(matchId).emit("timeLeft", timeStop);
+        timeStop--;
+      }, 100);
+    }
+
+    allGames.splice(idx, 1, updatedGame);
   });
 
   //Cada vez que el front requiere actualizar el objeto game.
   socket.on("getActiveGame", (roomName) => {
-    console.log("sending game");
-    console.log(roomName);
-    io.sockets.in(roomName).emit(
-      "activeGame",
-      allGames.find((elm) => elm.name === roomName)
-    );
-    // io.sockets.in(roomName).emit(
-    //   "activeGame",
-    //   allGames.find((elm) => elm.name === roomName)
-    // );
+    const activeGame = allGames.find((elm) => elm.name === roomName);
+    const numberOfUsers = activeGame.users.length; // number
+    const maxUsersPerTeam = 4; // n
+    const numberOfTeams = Math.ceil(numberOfUsers / maxUsersPerTeam) + 1;
+    const teams = makeTeams(activeGame.users, numberOfTeams);
+    teams.forEach((formedTeam, idx) => {
+      const keyName = `team_${idx}`;
+      activeGame[keyName] = formedTeam;
+    });
+
+    io.sockets.in(roomName).emit("activeGame", activeGame);
   });
 
   socket.on("postWord", ({ matchId, newWord }) => {
-    console.log(newWord);
     const idx = allGames.findIndex((game) => game.name == matchId);
     allGames[idx].words.push(newWord);
     io.sockets.in(matchId).emit("activeGame", allGames[idx]);
   });
+
   //STUFF TO DO ON CONNECTION
   socket.on("disconnect", () => console.log("Client disconnected"));
 });
