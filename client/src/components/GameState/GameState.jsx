@@ -28,6 +28,11 @@ function GameState({ active, game, timeLeft }) {
     <div>
       <Counter time={timeLeft} />
       <CurrentUser currentPlayer={game.activePlayer ? game.activePlayer.name : "nada"} />
+      {window.localStorage.getItem("user") == game.activePlayer.name ? (
+        <p>Palabra actual: {game.activeWord}</p>
+      ) : (
+        <p>No es tu turno, no puedes ver la palabra.</p>
+      )}
     </div>
   );
 }
