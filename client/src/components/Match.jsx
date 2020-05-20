@@ -44,7 +44,7 @@ function Match(props) {
   };
 
   const nextTurn = () => {
-    const newGame = { ...game };
+    const newGame = { ...game, activePlayer: { ...game.activePlayer } };
     newGame.turn++;
     changeActiveWord(newGame);
     setGame(newGame);

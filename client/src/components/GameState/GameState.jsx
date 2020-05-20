@@ -27,7 +27,7 @@ function GameState({ active, game, timeLeft }) {
   return (
     <div>
       <Counter time={timeLeft} />
-      <CurrentUser game={game.activePlayer} />
+      <CurrentUser currentPlayer={game.activePlayer ? game.activePlayer.name : "nada"} />
     </div>
   );
 }

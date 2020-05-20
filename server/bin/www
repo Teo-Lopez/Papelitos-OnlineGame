@@ -45,31 +45,33 @@ const makeTeams = (userList, numberOfTeams) => {
 const findCurrentPlayer = (lastPlayer, currentGame) => {
   let found = false;
   let newActivePlayer;
-
+  let playerIndex;
+  let teamIdx = -1;
   // Itera los equipos //
   for (let key in currentGame) {
+    if (found) {
+      newActivePlayer = currentGame[key][playerIndex];
+      console.log(newActivePlayer, currentGame[key], "53");
+      break;
+    }
+
     if (key.includes("team")) {
-      let playerIndex = currentGame[key].findIndex((player) => {
-        console.log(player.name, lastPlayer);
-        return player.name === lastPlayer;
-      });
-
-      //// TO-DO RETORNA UNDEFINED ///
-
-      //Si ha encontrado el antiguo player lo sustituye
-      if (found) {
-        newActivePlayer = currentGame[key][playerIndex];
-        console.log(newActivePlayer, "new activePlayer");
-        break;
-      }
-      console.log(playerIndex, "playerindex");
+      teamIdx++;
+      playerIndex = currentGame[key].findIndex((player) => player.name === lastPlayer);
       //Si encuentra al antiguo usuario lo marca para la siguiente vuelta
+
+      console.log(playerIndex, "playerIndex 61");
       if (playerIndex != -1) {
         found = true;
+        console.log("es ultimo?", playerIndex, currentGame[key].length - 1);
+        if (playerIndex == currentGame[key].length - 1) playerIndex = 0;
       }
+
+      //Si ha encontrado el antiguo player lo sustituye
     }
   }
-
+  if (!newActivePlayer) newActivePlayer = currentGame.team_0[0];
+  console.log(newActivePlayer, "resultado");
   return newActivePlayer;
 };
 
@@ -149,15 +151,15 @@ io.on("connection", (socket) => {
   socket.on("updateGame", ({ matchId, updatedGame }) => {
     const idx = allGames.findIndex((elm) => elm.name == updatedGame.name);
     const oldGame = allGames[idx];
-
+    console.log(updatedGame, "info del juego de cliente");
     //Si en el update cambia el turno inicia la cuenta //
     if (oldGame.turn != updatedGame.turn) {
       updatedGame.activeTurn = true;
 
-      oldGame.activePlayer
+      oldGame.activePlayer.name
         ? (updatedGame.activePlayer = findCurrentPlayer(oldGame.activePlayer.name, updatedGame))
         : (updatedGame.activePlayer = updatedGame.users[0]);
-      console.log(updatedGame);
+
       io.sockets.in(matchId).emit("activeGame", updatedGame);
 
       let timeInterval,

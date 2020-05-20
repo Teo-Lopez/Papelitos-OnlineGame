@@ -61,14 +61,47 @@ function App(props) {
       <h1>PAPELITOS</h1>
       {!props.username ? (
         <div>
+          <p>Esta web es una herramienta sencilla para gestionar los turnos y equipos para el juego papelitos.</p>
+          <p>
+            Este juego consiste en formar equipos con los amigos y, por rondas, sacar papelitos de una caja donde estarán escritas palabras,
+            frases, expresiones... cualquier cosa!
+          </p>
+          <p>Durante la primera ronda se juega a modo Tabú, teniendo que describir la palabra evitando las pistas más obvias.</p>
+          <p>En la segunda se hace un dibujo al estilo pictionary.</p>
+          <p>
+            En la tercera tienes que decir una sola palabra que lo describa o este relacionada y tus compañeros han de averiguarlo solo con
+            eso!
+          </p>
+          <p>
+            Las rondas están todavía por implementar. Para el pictionary recomendamos una app de pizarra compartida como:
+            <a href="https://awwapp.com/"> esta de awwapp</a>
+          </p>
+
           <form onSubmit={submitUsername}>
             <label>
+              Elige tu nombre de usuario:
               <input name="username" placeholder="Nombre" value={username} onChange={onChange}></input>
             </label>
           </form>
         </div>
       ) : (
         <div>
+          <p>Esta web es una herramienta sencilla para gestionar los turnos y equipos para el juego papelitos.</p>
+          <p>
+            Este juego consiste en formar equipos con los amigos y, por rondas, sacar papelitos de una caja donde estarán escritas palabras,
+            frases, expresiones... cualquier cosa!
+          </p>
+          <p>Durante la primera ronda se juega a modo Tabú, teniendo que describir la palabra evitando las pistas más obvias.</p>
+          <p>En la segunda se hace un dibujo al estilo pictionary.</p>
+          <p>
+            En la tercera tienes que decir una sola palabra que lo describa o este relacionada y tus compañeros han de averiguarlo solo con
+            eso!
+          </p>
+          <p>
+            Las rondas están todavía por implementar. Para el pictionary recomendamos una app de pizarra compartida como:
+            <a href="https://awwapp.com/"> esta de awwapp</a>
+          </p>
+
           <h3>Crea tu partida</h3>
           <form onSubmit={onSubmit}>
             <label>
